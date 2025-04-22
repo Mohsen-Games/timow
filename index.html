@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>TIMOW - Your To-Do List</title>
+    <style>
+        /* --- Global Styles & Reset --- */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent; /* Disable tap highlight on mobile */
+        }
+
+        html, body {
+            height: 100%;
+            overflow: hidden; /* Prevent scrolling on the body */
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 16px; /* Base font size for mobile */
+            overscroll-behavior-y: contain; /* Prevent pull-to-refresh */
+        }
+
+        button, input[type="text"], input[type="number"] {
+            font-family: inherit;
+            font-size: 1rem;
+            padding: 12px 15px;
+            border-radius: 25px;
+            border: none;
+            margin-bottom: 15px;
+            width: 100%;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        input:focus {
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.5);
+        }
+
+        button {
+            background-color: #ff6b6b; /* Attractive button color */
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+        }
+
+        button:hover {
+            background-color: #ff4f4f;
+        }
+        button:active {
+             transform: scale(0.98);
+        }
+
+        /* --- Container --- */
+        .container {
+            background-color: rgba(255, 255, 255, 0.95);
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            width: 90%;
+            max-width: 400px; /* Max width for very small screens */
+            height: 90vh; /* Limit height */
+            display: flex;
+            flex-direction: column;
+            overflow: hidden; /* Important for scrolling */
+        }
+
+        h1, h2 {
+            text-align: center;
+            color: #4a4a4a;
+            margin-bottom: 20px;
+        }
+        h1 { font-size: 2rem; color: #764ba2; }
+        h2 { font-size: 1.2rem; }
+
+
+        /* --- Login Screen --- */
+        #login-screen {
+            display: flex; /* Initially shown */
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+        }
+
+        #login-screen p {
+            margin-bottom: 10px;
+            color: #555;
+        }
+
+
+        /* --- App Screen --- */
+        #app-screen {
+            display: none; /* Initially hidden */
+            flex-direction: column;
+            height: 100%; /* Take full height of container */
+        }
+
+        .app-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+
+        #welcome-message {
+            font-size: 0.9rem;
+            color: #555;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            flex-grow: 1; /* Allow text to take space */
+            margin-right: 10px;
+        }
+
+        #logout-button {
+            background-color: #aaa;
+            color: white;
+            padding: 5px 12px;
+            font-size: 0.8rem;
+            border-radius: 15px;
+            width: auto; /* Override default width */
+            margin-bottom: 0; /* Override margin */
+            flex-shrink: 0; /* Prevent shrinking */
+        }
+         #logout-button:hover {
+             background-color: #888;
+         }
+
+
+        /* --- Add Task Form --- */
+        #add-task-form {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 20px;
+            position: relative; /* For potential absolute positioning inside */
+             flex-shrink: 0; /* Prevent form from shrinking when list grows */
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px; /* Space between inputs */
+            margin-bottom: 10px;
+        }
+
+        #task-input {
+            flex-grow: 1; /* Take remaining space */
+            margin-bottom: 0; /* Override margin */
+        }
+
+        #time-input {
+            width: 80px; /* Fixed width for time */
+            flex-shrink: 0;
+             margin-bottom: 0; /* Override margin */
+            -moz-appearance: textfield; /* Hide number spinners Firefox */
+        }
+        #time-input::-webkit-outer-spin-button,
+        #time-input::-webkit-inner-spin-button { /* Hide number spinners Chrome, Safari, Edge, Opera */
+          -webkit-appearance: none;
+          margin: 0;
+        }
+
+        #add-task-button {
+            background-color: #20c997; /* Different color for add */
+             margin-bottom: 0; /* Override margin */
+        }
+        #add-task-button:hover {
+            background-color: #1baa80;
+        }
+
+
+        /* --- Task List --- */
+        #task-list-container {
+            flex-grow: 1; /* Allows this container to take remaining space */
+            overflow-y: auto; /* Enables scrolling ONLY for the task list */
+            margin: 0 -10px; /* Add slight negative margin to allow scrollbar space without shifting content */
+            padding: 0 10px; /* Add padding back */
+            scrollbar-width: thin; /* Firefox */
+            scrollbar-color: #ccc #f0f0f0; /* Firefox */
+        }
+        /* Webkit Scrollbar Styles */
+        #task-list-container::-webkit-scrollbar {
+            width: 6px;
+        }
+        #task-list-container::-webkit-scrollbar-track {
+            background: #f0f0f0;
+            border-radius: 3px;
+        }
+        #task-list-container::-webkit-scrollbar-thumb {
+            background-color: #ccc;
+            border-radius: 3px;
+        }
+
+        #task-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .task-item {
+            background-color: #fff;
+            padding: 12px 15px;
+            margin-bottom: 10px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+            transition: background-color 0.3s ease, opacity 0.3s ease;
+            word-break: break-word; /* Allow long words to wrap */
+        }
+
+        .task-item.completed {
+            background-color: #e9ecef;
+            opacity: 0.7;
+        }
+
+        .task-item input[type="checkbox"] {
+            margin-right: 12px;
+            width: auto; /* Override default width */
+            flex-shrink: 0;
+             /* Custom checkbox styling */
+             appearance: none;
+             -webkit-appearance: none;
+             height: 20px;
+             width: 20px;
+             background-color: #eee;
+             border: 1px solid #ccc;
+             border-radius: 50%;
+             cursor: pointer;
+             position: relative;
+             outline: none;
+             transition: background-color 0.2s ease;
+        }
+        .task-item input[type="checkbox"]:checked {
+            background-color: #20c997; /* Match add button */
+            border-color: #1baa80;
+        }
+         /* Custom checkmark */
+        .task-item input[type="checkbox"]:checked::after {
+            content: '';
+            position: absolute;
+            top: 3px;
+            left: 6px;
+            width: 4px;
+            height: 8px;
+            border: solid white;
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+        }
+
+
+        .task-content {
+            flex-grow: 1;
+            margin-right: 10px;
+            /* No text decoration initially */
+        }
+
+        .task-item.completed .task-content {
+            text-decoration: line-through;
+            color: #6c757d;
+        }
+
+        .task-time {
+            font-size: 0.8rem;
+            color: #888;
+            background-color: #f0f0f0;
+            padding: 3px 8px;
+            border-radius: 10px;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+         .task-item.completed .task-time {
+            background-color: #d6d8db;
+         }
+
+
+        /* --- No Tasks Message --- */
+        #no-tasks-message {
+            text-align: center;
+            color: #888;
+            margin-top: 30px;
+            font-style: italic;
+        }
+
+        /* --- Simple Hide/Show --- */
+        .hidden {
+            display: none !important; /* Use important to override initial display */
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="container">
+
+        <!-- Login Screen -->
+        <div id="login-screen">
+            <h1>TIMOW</h1>
+            <p>Log in to save your tasks</p>
+            <input type="text" id="username-input" placeholder="Enter your username">
+            <button id="login-button">Login / Sign Up</button>
+             <p style="font-size: 0.7rem; color: #aaa; margin-top:15px; text-align: center;">(Usernames are case-sensitive. Uses browser storage only)</p>
+        </div>
+
+        <!-- App Screen -->
+        <div id="app-screen" class="hidden">
+            <div class="app-header">
+                 <span id="welcome-message">Welcome, User!</span>
+                 <button id="logout-button">Logout</button>
+            </div>
+
+            <h2>My Tasks</h2>
+
+            <form id="add-task-form">
+                <div class="input-group">
+                    <input type="text" id="task-input" placeholder="Enter a new task..." required>
+                    <input type="number" id="time-input" placeholder="Time (min)" min="0">
+                </div>
+                <button type="submit" id="add-task-button">Add Task</button>
+            </form>
+
+            <div id="task-list-container">
+                 <ul id="task-list">
+                    <!-- Tasks will be added here by JavaScript -->
+                 </ul>
+                 <p id="no-tasks-message" class="hidden">No tasks yet. Add one above!</p>
+            </div>
+
+        </div>
+
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- DOM Elements ---
+            const loginScreen = document.getElementById('login-screen');
+            const appScreen = document.getElementById('app-screen');
+            const usernameInput = document.getElementById('username-input');
+            const loginButton = document.getElementById('login-button');
+            const logoutButton = document.getElementById('logout-button');
+            const welcomeMessage = document.getElementById('welcome-message');
+            const addTaskForm = document.getElementById('add-task-form');
+            const taskInput = document.getElementById('task-input');
+            const timeInput = document.getElementById('time-input');
+            const taskList = document.getElementById('task-list');
+            const noTasksMessage = document.getElementById('no-tasks-message');
+
+            // --- State ---
+            let currentUser = null;
+            let tasks = []; // Array to hold task objects { id, text, time, completed }
+
+            // --- Functions ---
+
+            // Save tasks to localStorage for the current user
+            function saveTasks() {
+                if (!currentUser) return;
+                try {
+                    localStorage.setItem(`timow_tasks_${currentUser}`, JSON.stringify(tasks));
+                } catch (e) {
+                    console.error("Error saving tasks to localStorage:", e);
+                    alert("Could not save tasks. Local storage might be full or disabled.");
+                }
+            }
+
+            // Load tasks from localStorage for the current user
+            function loadTasks() {
+                if (!currentUser) return;
+                try {
+                    const storedTasks = localStorage.getItem(`timow_tasks_${currentUser}`);
+                    tasks = storedTasks ? JSON.parse(storedTasks) : [];
+                } catch (e) {
+                     console.error("Error loading tasks from localStorage:", e);
+                     alert("Could not load tasks. Saved data might be corrupted.");
+                     tasks = []; // Reset tasks if loading fails
+                }
+                renderTasks();
+            }
+
+            // Render the tasks list in the UI
+            function renderTasks() {
+                taskList.innerHTML = ''; // Clear current list
+
+                if (tasks.length === 0) {
+                    noTasksMessage.classList.remove('hidden');
+                } else {
+                    noTasksMessage.classList.add('hidden');
+                    tasks.forEach(task => {
+                        const li = document.createElement('li');
+                        li.classList.add('task-item');
+                        li.dataset.id = task.id; // Store task ID on the element
+                        if (task.completed) {
+                            li.classList.add('completed');
+                        }
+
+                        const checkbox = document.createElement('input');
+                        checkbox.type = 'checkbox';
+                        checkbox.checked = task.completed;
+                        checkbox.addEventListener('change', toggleTaskComplete); // Add listener
+
+                        const taskContent = document.createElement('span');
+                        taskContent.classList.add('task-content');
+                        taskContent.textContent = task.text;
+
+                        const taskTime = document.createElement('span');
+                        taskTime.classList.add('task-time');
+                        taskTime.textContent = task.time ? `${task.time} min` : ''; // Display time only if provided
+                        if (!task.time) taskTime.style.display = 'none'; // Hide time span if no time
+
+                        li.appendChild(checkbox);
+                        li.appendChild(taskContent);
+                        li.appendChild(taskTime);
+
+                        // Add click listener to the entire item (excluding checkbox) for easier toggling
+                        li.addEventListener('click', (event) => {
+                            if (event.target !== checkbox) { // Only toggle if click wasn't directly on checkbox
+                                checkbox.checked = !checkbox.checked;
+                                // Manually trigger the change event
+                                const changeEvent = new Event('change');
+                                checkbox.dispatchEvent(changeEvent);
+                            }
+                        });
+
+
+                        taskList.appendChild(li);
+                    });
+                }
+            }
+
+            // Add a new task
+            function addTask(event) {
+                event.preventDefault(); // Prevent form from submitting traditionally
+                const taskText = taskInput.value.trim();
+                const taskTime = timeInput.value.trim();
+
+                if (taskText === '') {
+                    alert('Please enter a task description.');
+                    taskInput.focus();
+                    return;
+                }
+
+                const newTask = {
+                    id: Date.now(), // Simple unique ID using timestamp
+                    text: taskText,
+                    time: taskTime ? parseInt(taskTime, 10) : null, // Store time as number or null
+                    completed: false
+                };
+
+                tasks.push(newTask); // Add to the local array
+                saveTasks(); // Save to localStorage
+                renderTasks(); // Update the UI
+
+                // Clear input fields
+                taskInput.value = '';
+                timeInput.value = '';
+                taskInput.focus(); // Set focus back to task input
+            }
+
+            // Toggle task completion status
+            function toggleTaskComplete(event) {
+                const checkbox = event.target;
+                const li = checkbox.closest('.task-item'); // Find the parent li
+                const taskId = Number(li.dataset.id); // Get task ID from data attribute
+
+                const taskIndex = tasks.findIndex(task => task.id === taskId);
+                if (taskIndex > -1) {
+                    tasks[taskIndex].completed = checkbox.checked; // Update the task's completed status
+                    saveTasks(); // Save the updated tasks array
+                    // Update UI immediately (add/remove 'completed' class) instead of full re-render for smoothness
+                     li.classList.toggle('completed', checkbox.checked);
+                    // renderTasks(); // Alternatively, uncomment this for a full re-render
+                } else {
+                    console.error("Task not found for toggling:", taskId);
+                }
+            }
+
+            // Login function
+            function login() {
+                const username = usernameInput.value.trim();
+                if (username === '') {
+                    alert('Please enter a username.');
+                    usernameInput.focus();
+                    return;
+                }
+                currentUser = username;
+                localStorage.setItem('timow_currentUser', currentUser); // Save logged-in user
+
+                welcomeMessage.textContent = `Welcome, ${currentUser}!`;
+                loginScreen.classList.add('hidden');
+                appScreen.classList.remove('hidden');
+                appScreen.style.display = 'flex'; // Ensure flex display is set
+
+                loadTasks(); // Load tasks for this user
+            }
+
+            // Logout function
+            function logout() {
+                currentUser = null;
+                localStorage.removeItem('timow_currentUser'); // Remove logged-in user marker
+                tasks = []; // Clear tasks array
+
+                loginScreen.classList.remove('hidden');
+                loginScreen.style.display = 'flex'; // Ensure flex display is set
+                appScreen.classList.add('hidden');
+                usernameInput.value = ''; // Clear username field for next login
+            }
+
+            // Check if user was previously logged in
+            function checkLoginStatus() {
+                 const savedUser = localStorage.getItem('timow_currentUser');
+                 if (savedUser) {
+                     currentUser = savedUser;
+                     welcomeMessage.textContent = `Welcome, ${currentUser}!`;
+                     loginScreen.classList.add('hidden');
+                     appScreen.classList.remove('hidden');
+                      appScreen.style.display = 'flex'; // Ensure flex display is set
+                     loadTasks();
+                 } else {
+                    loginScreen.classList.remove('hidden');
+                     loginScreen.style.display = 'flex'; // Ensure flex display is set
+                     appScreen.classList.add('hidden');
+                 }
+            }
+
+            // --- Event Listeners ---
+            loginButton.addEventListener('click', login);
+            // Allow login on Enter key in username field
+            usernameInput.addEventListener('keypress', (e) => {
+                 if (e.key === 'Enter') {
+                    login();
+                 }
+            });
+
+            logoutButton.addEventListener('click', logout);
+            addTaskForm.addEventListener('submit', addTask);
+
+            // --- Initial Load ---
+            checkLoginStatus();
+
+        }); // End DOMContentLoaded
+    </script>
+
+</body>
+</html>
